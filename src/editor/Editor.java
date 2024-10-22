@@ -17,6 +17,9 @@ import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,6 +29,9 @@ public class Editor extends JFrame implements ActionListener {
 	//Editor text area
 	JTextArea textArea;
 	JFileChooser fileChooser;
+	
+	//Path to save location for faster saving
+	File activeFile;
 
 	public Editor() {
 		//Main Window Settings
@@ -97,19 +103,64 @@ public class Editor extends JFrame implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		String command = e.getActionCommand();
+		int success;
 		
 		switch (command) {
 		case "New":
 			this.textArea.setText("");
+			activeFile = null;
 			break;
 		case "Save":
+			if (activeFile == null) {
+				success = fileChooser.showSaveDialog(null);
+				
+				if (success == JFileChooser.APPROVE_OPTION) {
+					activeFile = fileChooser.getSelectedFile();
+				} else {
+					break;
+				}
+			}
+				
+			try {
+				FileWriter fileWriter = new FileWriter(activeFile, false);
+				BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+				
+				bufferedWriter.write(textArea.getText());
+				bufferedWriter.close();
+				fileWriter.close();
+			} catch (IOException err) {
+				err.printStackTrace();
+			}
+			
+			break;
+			
+		case "Save As...":
+			success = fileChooser.showSaveDialog(null);
+			
+			if (success == JFileChooser.APPROVE_OPTION) {
+				activeFile = fileChooser.getSelectedFile();
+				
+				try {
+					FileWriter fileWriter = new FileWriter(activeFile, false);
+					BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+					
+					bufferedWriter.write(textArea.getText());
+					bufferedWriter.close();
+					fileWriter.close();
+				} catch (IOException err) {
+					err.printStackTrace();
+				}
+				
+			}
+			
 			
 			break;
 		case "Open":
-			int success = fileChooser.showOpenDialog(null);
+			success = fileChooser.showOpenDialog(null);
 			
 			if (success == JFileChooser.APPROVE_OPTION) {
-				Path targetPath = fileChooser.getSelectedFile().toPath();
+				activeFile = fileChooser.getSelectedFile();
+				Path targetPath = activeFile.toPath();
 				
 				try {
 					String data = Files.readString(targetPath);
@@ -128,6 +179,5 @@ public class Editor extends JFrame implements ActionListener {
 		Editor edit = new Editor();
 
 	}
-
 
 }
