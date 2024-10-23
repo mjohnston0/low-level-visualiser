@@ -99,6 +99,14 @@ public class Editor extends JFrame implements ActionListener {
 		setVisible(true);
 		
 	}
+	
+	private void updateTitle() {
+		if (activeFile != null) {
+			setTitle("Code Editor (" + activeFile.getName() + ")");
+		} else {
+			setTitle("Code Editor");
+		}
+	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
@@ -109,6 +117,7 @@ public class Editor extends JFrame implements ActionListener {
 		case "New":
 			this.textArea.setText("");
 			activeFile = null;
+			updateTitle();
 			break;
 		case "Save":
 			if (activeFile == null) {
@@ -132,6 +141,7 @@ public class Editor extends JFrame implements ActionListener {
 				err.printStackTrace();
 			}
 			
+			updateTitle();
 			break;
 			
 		case "Save As...":
@@ -153,7 +163,7 @@ public class Editor extends JFrame implements ActionListener {
 				
 			}
 			
-			
+			updateTitle();
 			break;
 		case "Open":
 			success = fileChooser.showOpenDialog(null);
@@ -169,6 +179,7 @@ public class Editor extends JFrame implements ActionListener {
 					JOptionPane.showMessageDialog(this, "Error opening this file.");
 				}
 			}
+			updateTitle();
 		}
 		
 	}
