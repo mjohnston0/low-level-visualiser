@@ -24,16 +24,22 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+@SuppressWarnings("serial")
 public class Editor extends JFrame implements ActionListener {
 	
 	//Editor text area
-	JTextArea textArea;
-	JFileChooser fileChooser;
+	private JTextArea textArea;
+	private JTextArea console;
+	private JTextArea codeDisplay;
+	private JFileChooser fileChooser;
 	
 	//Path to save location for faster saving
-	File activeFile;
+	private File activeFile;
+	
+	private VirtualMachine virtualM;
 
 	public Editor() {
+		
 		//Main Window Settings
 		setTitle("Code Editor");
 		setSize(800, 600);
@@ -77,8 +83,22 @@ public class Editor extends JFrame implements ActionListener {
 		file.add(optionSave);
 		file.add(optionSaveAs);
 		
-		menuBar.add(file);
+		JMenu code = new JMenu("Code");
 		
+		JMenuItem quickRun = new JMenuItem("Quick Run");
+		quickRun.addActionListener(this);
+		code.add(quickRun);
+		
+		JMenuItem loadCode = new JMenuItem("Load Code");
+		loadCode.addActionListener(this);
+		code.add(loadCode);
+		
+		JMenuItem executeLine = new JMenuItem("Execute Next Line");
+		executeLine.addActionListener(this);
+		code.add(executeLine);
+		
+		menuBar.add(file);
+		menuBar.add(code);
 		setJMenuBar(menuBar);
 		
 		//Set up main areas
@@ -88,14 +108,28 @@ public class Editor extends JFrame implements ActionListener {
 		textArea = new JTextArea();
 		textArea.setFont(new Font("Courier new", Font.PLAIN, 16));
 		
-		JPanel executionPanel = new JPanel();
+		JPanel rightPanel = new JPanel();
+		rightPanel.setLayout(new GridLayout(2,1));
+		
+		console = new JTextArea();
+		console.setEditable(false);
+		JScrollPane consoleScroll = new JScrollPane(console);
+		
+		codeDisplay = new JTextArea();
+		codeDisplay.setEditable(false);
+		JScrollPane codeDisplayScroll = new JScrollPane(codeDisplay);
+		
+		rightPanel.add(codeDisplayScroll);
+		rightPanel.add(consoleScroll);
 		
 		JScrollPane textAreaScroll = new JScrollPane(textArea);
 		
 		wrapper.add(textAreaScroll);
-		wrapper.add(executionPanel);
+		wrapper.add(rightPanel);
 		add(wrapper, BorderLayout.CENTER);
-		setSize(800,600);
+		
+		virtualM = new VirtualMachine(8, console);
+		
 		setVisible(true);
 		
 	}
@@ -180,6 +214,29 @@ public class Editor extends JFrame implements ActionListener {
 				}
 			}
 			updateTitle();
+			break;
+		case "Quick Run":
+			virtualM.loadCode(this.textArea.getText());
+			codeDisplay.setText(this.textArea.getText());
+			while (virtualM.running()) {
+				virtualM.executeNextLine();
+			}
+			break;
+			
+		case "Load Code":
+			virtualM.loadCode(this.textArea.getText());
+			codeDisplay.setText(this.textArea.getText());
+			break;
+			
+		case "Execute Next Line":
+			if (virtualM.running()) {
+				virtualM.executeNextLine();
+			} else {
+				console.append("Error: No code to execute\n");
+			}
+			
+			break;
+			
 		}
 		
 	}
