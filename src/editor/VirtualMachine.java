@@ -55,6 +55,10 @@ public class VirtualMachine {
 		Matcher assnMatcher = assnPattern.matcher(line);
 		Pattern gotoPattern = Pattern.compile("^goto ([a-zA-Z0-9]+)$");
 		Matcher gotoMatcher = gotoPattern.matcher(line);
+		Pattern ifGotoPattern = Pattern.compile("^if ([a-zA-Z0-9]+) (==|<|>|<=|>=|!=) ([a-zA-Z0-9]+) goto ([a-zA-Z0-9]+)$");
+		Matcher ifGotoMatcher = ifGotoPattern.matcher(line);
+		Pattern compPattern = Pattern.compile("^([a-zA-Z][a-zA-Z0-9]*) = ([a-zA-Z0-9]+) (\\+|-|\\*|/) ([a-zA-Z0-9]+)");
+		Matcher compMatcher = compPattern.matcher(line);
 		
 		//PATTERN MATCHING AND PROCESS
 		//ASSIGNMENT
@@ -62,23 +66,11 @@ public class VirtualMachine {
 	
 			if (assnMatcher.group(1) != null && assnMatcher.group(2) != null) {
 				
-				if (varTable.containsKey(assnMatcher.group(2))) {
-					try {
-						assignVar(assnMatcher.group(1), memory[varTable.get(assnMatcher.group(2))]);
-					} catch(Exception ex) {
-						ex.printStackTrace();
-						
-					}
-				} else {
-				
-					try {
-						int val = Integer.valueOf( assnMatcher.group(2));
-						assignVar(assnMatcher.group(1), val);
-					} catch (Exception ex) {
-						System.out.println(ex);
-						ex.printStackTrace();
-					
-					}
+				try {
+					int val = evalVarName(assnMatcher.group(2));
+					assignVar(assnMatcher.group(1), val);
+				} catch (Exception ex) {
+					output.append("Error with assignment: "+ex+"\n");
 				}
 			}
 		}
@@ -101,13 +93,68 @@ public class VirtualMachine {
 			}
 		}
 		
+		//IF COND GOTO
+		if (ifGotoMatcher.find()) {
+			System.out.println(ifGotoMatcher.group(1) + "|" + ifGotoMatcher.group(2) + "|" + ifGotoMatcher.group(3)+ "|" + ifGotoMatcher.group(4));
+			String operator = ifGotoMatcher.group(2);
+			String cond1 = ifGotoMatcher.group(1);
+			String cond2 = ifGotoMatcher.group(3);
+			String dest = ifGotoMatcher.group(4);
+			boolean result;
+			try {
+				result = evaluateBoolExpression(cond1, cond2, operator);
+			} catch (Exception ex) {
+				output.append("Error: "+ex);
+				return;
+			}
+			
+			if (result) {
+				if (gotoLabels.containsKey(dest)) {
+					programCounter = gotoLabels.get(dest);
+					return;
+				} else {
+					try {
+						programCounter = Integer.valueOf(dest);
+					} catch (Exception ex) {
+						output.append("Goto argument invalid. Unrecognised label and not a number.");
+					}
+				}
+				
+			}
+			
+		}
+		
+		//COMPUTATION
+		if (compMatcher.find()) {
+			String arg1 = compMatcher.group(2);
+			String arg2 = compMatcher.group(4);
+			String op = compMatcher.group(3);
+			String assnName = compMatcher.group(1);
+			int result;
+			try {
+				result = evaluateExpression(arg1, arg2, op);
+			} catch (Exception ex) {
+				output.append("Computation failed with error: "+ex);
+				programCounter++;
+				return;
+			}
+			try {
+				assignVar(assnName, result);
+			}
+			catch (Exception ex) {
+				output.append("Failed to assign to variable with error: "+ex+"\n");
+			}
+		}
+		
 		
 		
 		programCounter++;
 	}
 	
 	public boolean running() {
-		return programCounter < codeLines.length && programCounter != -1;
+		return programCounter < codeLines.length && 
+				programCounter != -1 &&
+				codeLines != null;
 	}
 	
 	//Reset internal state of language
@@ -117,6 +164,86 @@ public class VirtualMachine {
 		gotoLabels = new HashMap<String, Integer>();
 		programCounter = 0;
 		memPointer = 0;
+	}
+	
+	private boolean evaluateBoolExpression(String cond1, String cond2, String op) throws Exception {
+		int val1, val2;
+		val1 = evalVarName(cond1);
+		val2 = evalVarName(cond2);
+		
+		//==|<|>|<=|>=|!=
+		switch (op) {
+		case "==":
+			if (val1 == val2) {
+				return true;
+			} else {
+				return false;
+			}
+		case "<":
+			if (val1 < val2) {
+				return true;
+			} else {
+				return false;
+			}
+		case ">":
+			if (val1 > val2) {
+				return true;
+			} else {
+				return false;
+			}
+		case "<=":
+			if (val1 <= val2) {
+				return true;
+			} else {
+				return false;
+			}
+		case ">=":
+			if (val1 >= val2) {
+				return true;
+			} else {
+				return false;
+			}
+		case "!=":
+			if (val1 != val2) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+		
+		return false;
+	}
+	
+	private int evaluateExpression(String arg1, String arg2, String op) throws Exception {
+		int val1, val2;
+		val1 = evalVarName(arg1);
+		val2 = evalVarName(arg2);
+		
+		switch (op) {
+		case "+":
+			return val1 + val2;
+		case "-":
+			return val1 - val2;
+		case "*":
+			return val1 * val2;
+		case "/":
+			return val1 / val2;
+		}
+		
+		throw new Exception("Invalid operator: "+op);
+	}
+	
+	private int evalVarName(String name) throws Exception {
+		if (varTable.containsKey(name)) {
+			return memory[varTable.get(name)];
+		} else {
+			try {
+				return Integer.valueOf(name);
+			} catch (Exception ex) {
+				System.out.println(name + " is an invalid var name or arguement.");
+				throw new Exception(name + " is an invalid var name or arguement.");
+			}
+		}
 	}
 	
 	private void assignVar(String varName, int value) throws Exception {
