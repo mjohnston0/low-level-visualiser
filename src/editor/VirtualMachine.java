@@ -25,13 +25,17 @@ public class VirtualMachine {
 	}
 	
 	//Prepare code from text into String Array, register goto labels
-	public void loadCode(String code) {
-		if (code == null) {
+	public void loadCode(String[] codeArray) {
+		this.codeLines = codeArray;
+		if (codeLines == null) {
 			return;
 		}
-		codeLines = code.split("\n");
 		clearState();
 		for (int i = 0; i<codeLines.length; i++) {
+			if (codeLines[i].length() == 0) {
+				continue;
+			}
+			
 			if (codeLines[i].charAt(0) == '#') {
 				gotoLabels.put(codeLines[i].substring(1), i);
 				output.append("Address " + i + " stored as " + codeLines[i].substring(1) + "\n");
@@ -146,16 +150,22 @@ public class VirtualMachine {
 			}
 		}
 		
-		
-		
 		programCounter++;
 	}
 	
 	public boolean running() {
+		if (codeLines == null) return false;
+		
 		return programCounter < codeLines.length && 
 				programCounter != -1 &&
 				codeLines != null;
 	}
+	
+	public int getProgramCounter() {
+		return programCounter;
+	}
+	
+	
 	
 	//Reset internal state of language
 	private void clearState() {

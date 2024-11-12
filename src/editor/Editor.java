@@ -1,7 +1,9 @@
 package editor;
 
+import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -14,6 +16,8 @@ import javax.swing.UnsupportedLookAndFeelException;
 
 import java.awt.Font;
 import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,6 +27,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 
 @SuppressWarnings("serial")
 public class Editor extends JFrame implements ActionListener {
@@ -32,6 +37,7 @@ public class Editor extends JFrame implements ActionListener {
 	private JTextArea console;
 	private JTextArea codeDisplay;
 	private JFileChooser fileChooser;
+	private JLabel progCounterLabel;
 	
 	//Path to save location for faster saving
 	private File activeFile;
@@ -128,6 +134,47 @@ public class Editor extends JFrame implements ActionListener {
 		wrapper.add(rightPanel);
 		add(wrapper, BorderLayout.CENTER);
 		
+		//Top Button Panel
+		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		
+		JButton openButton = new JButton("", UIManager.getIcon("FileView.directoryIcon"));
+		openButton.setPreferredSize(new Dimension(40,40));
+		openButton.setToolTipText("Open File");
+		openButton.setActionCommand("Open");
+		openButton.addActionListener(this);
+		
+		JButton saveButton = new JButton("", UIManager.getIcon("FileView.floppyDriveIcon"));
+		saveButton.setPreferredSize(new Dimension(40,40));
+		saveButton.setToolTipText("Save File");
+		saveButton.setActionCommand("Save");
+		saveButton.addActionListener(this);
+		
+		JButton loadCodeBtn = new JButton("Load Code");
+		loadCodeBtn.setActionCommand("Load Code");
+		loadCodeBtn.addActionListener(this);
+		
+		JButton executeLineBtn = new JButton("Execute Line");
+		executeLineBtn.setActionCommand("Execute Next Line");
+		executeLineBtn.addActionListener(this);
+		
+		buttonPanel.add(openButton);
+		buttonPanel.add(saveButton);
+		buttonPanel.add(loadCodeBtn);
+		buttonPanel.add(executeLineBtn);
+		
+		JPanel topPanel = new JPanel(new GridLayout(2,1));
+		
+		JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		
+		progCounterLabel = new JLabel("Program Counter: 0");
+		
+		statusPanel.add(progCounterLabel);
+
+		topPanel.add(buttonPanel);
+		topPanel.add(statusPanel);
+		
+		add(topPanel, BorderLayout.NORTH);
+		
 		virtualM = new VirtualMachine(8, console);
 		
 		setVisible(true);
@@ -216,21 +263,21 @@ public class Editor extends JFrame implements ActionListener {
 			updateTitle();
 			break;
 		case "Quick Run":
-			virtualM.loadCode(this.textArea.getText());
-			codeDisplay.setText(this.textArea.getText());
+			loadCode();
 			while (virtualM.running()) {
 				virtualM.executeNextLine();
+				progCounterLabel.setText("Program Counter: "+ virtualM.getProgramCounter());
 			}
 			break;
 			
 		case "Load Code":
-			virtualM.loadCode(this.textArea.getText());
-			codeDisplay.setText(this.textArea.getText());
+			loadCode();
 			break;
 			
 		case "Execute Next Line":
 			if (virtualM.running()) {
 				virtualM.executeNextLine();
+				progCounterLabel.setText("Program Counter: "+ virtualM.getProgramCounter());
 			} else {
 				console.append("Error: No code to execute\n");
 			}
@@ -238,6 +285,31 @@ public class Editor extends JFrame implements ActionListener {
 			break;
 			
 		}
+		
+	}
+	
+	private void loadCode() {
+		codeDisplay.setText("");
+		progCounterLabel.setText("Program Counter: 0");
+		int lineCounter = 0;
+		String[] codeLines = this.textArea.getText().split("\n");
+		ArrayList<String> validLines = new ArrayList<String>();
+		
+		for(String line : codeLines) {
+			if(line.length() > 0) {
+				if(line.startsWith("//")) {
+					continue;
+				}
+				validLines.add(line);
+				codeDisplay.append(lineCounter+"   "+line+"\n");
+				lineCounter++;
+			}
+		}
+		String[] code = new String[validLines.size()];
+		for (int i=0; i < validLines.size(); i++) {
+			code[i] = validLines.get(i);
+		}
+		virtualM.loadCode(code);
 		
 	}
 	
