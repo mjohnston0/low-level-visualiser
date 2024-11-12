@@ -51,17 +51,18 @@ public class VirtualMachine {
 			line = codeLines[programCounter];
 		} catch (Exception ex) {
 			System.out.println("ProgramCounter out of bounds.");
+			output.append("Program Counter out of bounds.\n");
 			return;
 		}
 		
 		// SYNTAX PATTERNS
-		Pattern assnPattern = Pattern.compile("^([a-zA-Z][a-zA-Z0-9]*) = ([a-zA-Z0-9]+)$");
+		Pattern assnPattern = Pattern.compile("^([a-zA-Z][a-zA-Z0-9]*) *= *(-?[a-zA-Z0-9]+)$");
 		Matcher assnMatcher = assnPattern.matcher(line);
-		Pattern gotoPattern = Pattern.compile("^goto ([a-zA-Z0-9]+)$");
+		Pattern gotoPattern = Pattern.compile("^goto (-?[a-zA-Z0-9]+)$");
 		Matcher gotoMatcher = gotoPattern.matcher(line);
-		Pattern ifGotoPattern = Pattern.compile("^if ([a-zA-Z0-9]+) (==|<|>|<=|>=|!=) ([a-zA-Z0-9]+) goto ([a-zA-Z0-9]+)$");
+		Pattern ifGotoPattern = Pattern.compile("^if (-?[a-zA-Z0-9]+) *(==|<|>|<=|>=|!=) *(-?[a-zA-Z0-9]+) goto (-?[a-zA-Z0-9]+)$");
 		Matcher ifGotoMatcher = ifGotoPattern.matcher(line);
-		Pattern compPattern = Pattern.compile("^([a-zA-Z][a-zA-Z0-9]*) = ([a-zA-Z0-9]+) (\\+|-|\\*|/) ([a-zA-Z0-9]+)");
+		Pattern compPattern = Pattern.compile("^([a-zA-Z][a-zA-Z0-9]*) *= *(-?[a-zA-Z0-9]+) *(\\+|-|\\*|/) *(-?[a-zA-Z0-9]+)$");
 		Matcher compMatcher = compPattern.matcher(line);
 		
 		//PATTERN MATCHING AND PROCESS
@@ -89,6 +90,7 @@ public class VirtualMachine {
 				} else {
 					try {
 						programCounter = Integer.valueOf(dest);
+						return;
 					} catch (Exception ex) {
 						output.append("Goto argument invalid. Unrecognised label and not a number.");
 					}
@@ -119,6 +121,7 @@ public class VirtualMachine {
 				} else {
 					try {
 						programCounter = Integer.valueOf(dest);
+						return;
 					} catch (Exception ex) {
 						output.append("Goto argument invalid. Unrecognised label and not a number.");
 					}
@@ -164,7 +167,6 @@ public class VirtualMachine {
 	public int getProgramCounter() {
 		return programCounter;
 	}
-	
 	
 	
 	//Reset internal state of language
@@ -244,14 +246,19 @@ public class VirtualMachine {
 	}
 	
 	private int evalVarName(String name) throws Exception {
+		int positive = 1;
+		if (name.startsWith("-")) {
+			positive = -1;
+			name = name.substring(1);
+		}
 		if (varTable.containsKey(name)) {
-			return memory[varTable.get(name)];
+			return positive * memory[varTable.get(name)];
 		} else {
 			try {
-				return Integer.valueOf(name);
+				return positive * Integer.valueOf(name);
 			} catch (Exception ex) {
-				System.out.println(name + " is an invalid var name or arguement.");
-				throw new Exception(name + " is an invalid var name or arguement.");
+				System.out.println(name + " is an invalid var name or argument.");
+				throw new Exception(name + " is an invalid var name or argument.");
 			}
 		}
 	}

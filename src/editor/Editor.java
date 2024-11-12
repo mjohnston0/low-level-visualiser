@@ -157,12 +157,17 @@ public class Editor extends JFrame implements ActionListener {
 		executeLineBtn.setActionCommand("Execute Next Line");
 		executeLineBtn.addActionListener(this);
 		
+		JButton runAllBtn = new JButton("Execute All");
+		runAllBtn.setActionCommand("Quick Run");
+		runAllBtn.addActionListener(this);
+		
 		buttonPanel.add(openButton);
 		buttonPanel.add(saveButton);
 		buttonPanel.add(loadCodeBtn);
 		buttonPanel.add(executeLineBtn);
+		buttonPanel.add(runAllBtn);
 		
-		JPanel topPanel = new JPanel(new GridLayout(2,1));
+		JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		
 		JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		
@@ -170,12 +175,12 @@ public class Editor extends JFrame implements ActionListener {
 		
 		statusPanel.add(progCounterLabel);
 
-		topPanel.add(buttonPanel);
-		topPanel.add(statusPanel);
+		add(buttonPanel, BorderLayout.NORTH);
+		bottomPanel.add(statusPanel);
 		
-		add(topPanel, BorderLayout.NORTH);
+		add(bottomPanel, BorderLayout.SOUTH);
 		
-		virtualM = new VirtualMachine(8, console);
+		virtualM = new VirtualMachine(128, console);
 		
 		setVisible(true);
 		
@@ -268,6 +273,7 @@ public class Editor extends JFrame implements ActionListener {
 				virtualM.executeNextLine();
 				progCounterLabel.setText("Program Counter: "+ virtualM.getProgramCounter());
 			}
+			console.append("Execution Complete.\n");
 			break;
 			
 		case "Load Code":
