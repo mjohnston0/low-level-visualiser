@@ -1,5 +1,6 @@
 package editor;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,20 +27,29 @@ public class VirtualMachine {
 	
 	//Prepare code from text into String Array, register goto labels
 	public void loadCode(String[] codeArray) {
-		this.codeLines = codeArray;
-		if (codeLines == null) {
+		//this.codeLines = codeArray;
+		ArrayList<String> codeBuffer = new ArrayList<String>();
+		if (codeArray == null) {
 			return;
 		}
 		clearState();
-		for (int i = 0; i<codeLines.length; i++) {
-			if (codeLines[i].length() == 0) {
+		int gotoAddr = 0;
+		for (int i = 0; i<codeArray.length; i++) {
+			if (codeArray[i].length() == 0) {
 				continue;
 			}
 			
-			if (codeLines[i].charAt(0) == '#') {
-				gotoLabels.put(codeLines[i].substring(1), i);
-				output.append("Address " + i + " stored as " + codeLines[i].substring(1) + "\n");
+			if (codeArray[i].charAt(0) == '#') {
+				gotoLabels.put(codeArray[i].substring(1), gotoAddr);
+				output.append("Address " + gotoAddr + " stored as " + codeArray[i].substring(1) + "\n");
+				continue;
 			}
+			codeBuffer.add(codeArray[i]);
+			gotoAddr++;
+		}
+		this.codeLines = new String[codeBuffer.size()];
+		for (int i=0;i<codeLines.length;i++) {
+			codeLines[i] = codeBuffer.get(i);
 		}
 		output.append("Code loaded successfully.\n");
 		

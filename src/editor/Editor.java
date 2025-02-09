@@ -307,8 +307,13 @@ public class Editor extends JFrame implements ActionListener {
 					continue;
 				}
 				validLines.add(line);
-				codeDisplay.append(lineCounter+"   "+line+"\n");
-				lineCounter++;
+				if (!line.startsWith("#")) {
+				    codeDisplay.append(lineCounter+"   "+line+"\n");
+				    lineCounter++;
+				} else {
+					codeDisplay.append(line+"\n");
+				}
+				
 			}
 		}
 		String[] code = new String[validLines.size()];
