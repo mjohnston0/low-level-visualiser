@@ -11,8 +11,10 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextPane;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.text.StyledDocument;
 
 import java.awt.Font;
 import java.awt.BorderLayout;
@@ -35,7 +37,7 @@ public class Editor extends JFrame implements ActionListener {
 	//Editor text area
 	private JTextArea textArea;
 	private JTextArea console;
-	private JTextArea codeDisplay;
+	private JTextPane codeDisplay;
 	private JFileChooser fileChooser;
 	private JLabel progCounterLabel;
 	
@@ -121,7 +123,10 @@ public class Editor extends JFrame implements ActionListener {
 		console.setEditable(false);
 		JScrollPane consoleScroll = new JScrollPane(console);
 		
-		codeDisplay = new JTextArea();
+		
+		codeDisplay = new JTextPane();
+		codeDisplay.setFont(new Font("Courier new", Font.PLAIN, 16));
+		
 		codeDisplay.setEditable(false);
 		JScrollPane codeDisplayScroll = new JScrollPane(codeDisplay);
 		
@@ -180,7 +185,7 @@ public class Editor extends JFrame implements ActionListener {
 		
 		add(bottomPanel, BorderLayout.SOUTH);
 		
-		virtualM = new VirtualMachine(128, console);
+		virtualM = new VirtualMachine(128, console, codeDisplay);
 		
 		setVisible(true);
 		
@@ -269,9 +274,15 @@ public class Editor extends JFrame implements ActionListener {
 			break;
 		case "Quick Run":
 			loadCode();
-			while (virtualM.running()) {
+			int commandcounter = 0;
+			while (virtualM.running() && commandcounter < 500000) {
 				virtualM.executeNextLine();
 				progCounterLabel.setText("Program Counter: "+ virtualM.getProgramCounter());
+				commandcounter++;
+			}
+			if (commandcounter == 500000) {
+				console.append("Ran 500,000 steps, check for infinite loop.");
+				break;
 			}
 			console.append("Execution Complete.\n");
 			break;
@@ -296,6 +307,8 @@ public class Editor extends JFrame implements ActionListener {
 	
 	private void loadCode() {
 		codeDisplay.setText("");
+		StyledDocument doc = codeDisplay.getStyledDocument();
+		
 		progCounterLabel.setText("Program Counter: 0");
 		int lineCounter = 0;
 		String[] codeLines = this.textArea.getText().split("\n");
@@ -308,10 +321,18 @@ public class Editor extends JFrame implements ActionListener {
 				}
 				validLines.add(line);
 				if (!line.startsWith("#")) {
-				    codeDisplay.append(lineCounter+"   "+line+"\n");
+					try {
+				    doc.insertString(doc.getLength(), lineCounter+"    "+line+"\n", null);
+					} catch (Exception e) {
+						System.out.println(e);
+					}
 				    lineCounter++;
 				} else {
-					codeDisplay.append(line+"\n");
+					try {
+					doc.insertString(doc.getLength(), line+"\n", null);
+					} catch (Exception e) {
+						System.out.println(e);
+					}
 				}
 				
 			}
